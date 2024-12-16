@@ -1,5 +1,11 @@
 #' Download BStGer Weekly
 #'
+#' It's important to retrieve the data not in bulk but in smaller bits.
+#' The website is updating the request asynchronously. Having a too large
+#' request means, that we had to scroll down in the browser. This is not
+#' feasible within the httr framework and RSelenium is not a good joice
+#' because a Java runtime is needed.
+#'
 #' @param startDate
 #' @param endDate
 #'
@@ -7,7 +13,9 @@
 #' @export
 #'
 #' @examples
+#' archive <- download_bstger(startDate = as.Date("2021-05-17"), endDate = as.Date("2021-05-17"))
 #' archive <- download_bstger()
+#'
 #' write_xl(archive)
 download_bstger <- function(startDate = as.Date("2024-01-01"),
                             endDate = Sys.Date(),
@@ -85,27 +93,26 @@ download_bstger <- function(startDate = as.Date("2024-01-01"),
       # body <- r"({"guiLanguage":"de","metadataDateMap":{"publicationDate":{"from":"2024-11-04T00:00:00.000Z","to":"2024-11-11T22:59:59.999Z"}},"metadataKeywordsMap":{"court":"Beschwerdekammer: Rechtshilfe;;Cour des plaintes: entraide pénale;;Corte dei reclami penali: assistenza giudiziaria;;Board of Appeal: Legal Assistance"},"aggs":{"fields":["rulingType","tipoSentenza","bgeStatus","year","court","language","lex-ch-bund-srList","ch-jurivocList","jud-ch-bund-bgeList","jud-ch-bund-bguList","jud-ch-bund-bvgeList","jud-ch-bund-bvgerList","jud-ch-bund-tpfList","jud-ch-bund-bstgerList","lex-ch-bund-asList","lex-ch-bund-bblList","lex-ch-bund-abList","jud-ch-ag-agveList"],"size":"100"}})"
       #
 
+      # Request with Data in Post
       body <- r"({"guiLanguage":"de","metadataDateMap":{"publicationDate":{"from":"%fromDate%T00:00:00.000Z","to":"%toDate%T22:59:59.999Z"}},"metadataKeywordsMap":{"court":"Beschwerdekammer: Rechtshilfe;;Cour des plaintes: entraide pénale;;Corte dei reclami penali: assistenza giudiziaria;;Board of Appeal: Legal Assistance"},"aggs":{"fields":["rulingType","tipoSentenza","bgeStatus","year","court","language","lex-ch-bund-srList","ch-jurivocList","jud-ch-bund-bgeList","jud-ch-bund-bguList","jud-ch-bund-bvgeList","jud-ch-bund-bvgerList","jud-ch-bund-tpfList","jud-ch-bund-bstgerList","lex-ch-bund-asList","lex-ch-bund-bblList","lex-ch-bund-abList","jud-ch-ag-agveList"],"size":"100"}})"
       body <- gsub("%fromDate%", fromDate, body)
       body <- gsub("%toDate%", toDate, body)
-
       json_data <- jsonlite::parse_json(body)
 
-
       url <- "https://bstger.weblaw.ch/api/.netlify/functions/searchQueryService"
-      # response <- httr::GET(u)
-      # You need to enable JavaScript to run this app.
-
       responseJSON <- httr::POST(url, h, body = json_data, encode = "json")
 
 
-
+      # Check Response
       if(httr::status_code(responseJSON) == "200"){
         json <- httr::content(responseJSON, as="text", encoding = "UTF8")
         df <- jsonlite::parse_json(json)
         N <- df$totalNumberOfDocuments
 
         for (d in df$documents){
+          # Finding BGE Entscheide
+          # if(is.null(decision$ENTSCHEIDSTATUS)) browser()
+          # BGESTATUS = unlist(d$metadataKeywordTextMap$bgeStatus)
 
           # Add to Archive
           decision <- tibble_row(
@@ -118,9 +125,15 @@ download_bstger <- function(startDate = as.Date("2024-01-01"),
                           ENTSCHEIDDATUM = unlist(d$metadataDateMap$rulingDate),  # d$metadataKeywordTextMap$sortRulingDate[[1]]
                           PUBLUKATIONSDATUM = unlist(d$metadataDateMap$publicationDate),    #  d$metadataKeywordTextMap$sortPublicationDate[[1]]
                           ENTSCHEIDTYP = unlist(d$metadataKeywordTextMap$rulingType),   # BStGer
-                          ENTSCHEIDSTATUS = unlist(d$metadataKeywordTextMap$tipoSentenza) # Kein Weiterzug
+
+                          # ENTSCHEIDSTATUS
+                          # 1st BStGer  ... unlist(d$metadataKeywordTextMap$tipoSentenza), # Kein Weiterzug
+                          # 2nd BGE if BStGer is NULL
+                          ENTSCHEIDSTATUS = paste0(unlist(d$metadataKeywordTextMap$tipoSentenza),
+                                                   unlist(d$nestedMetadataMap$bgeDossier)[[1]])
                         )
 
+          # Cache Storage
           json_archive[[d$leid]] <- decision
 
           # Download-Link
