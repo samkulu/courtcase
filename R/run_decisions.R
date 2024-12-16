@@ -1,5 +1,6 @@
 run_decisions <- function(){
 
+  # Year
   year <- get_year()
 
   # BGer Leitentscheide

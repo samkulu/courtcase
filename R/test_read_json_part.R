@@ -6,6 +6,7 @@ test_read_json_part <- function(dest = NA){
     dest <- file.path(dest, "BStGer","Beschwerdekammer_RH")
   }
 
+
   url <- "https://bstger.weblaw.ch/?size=n_500_n&filters%5B0%5D%5Bfield%5D=court&filters%5B0%5D%5Bvalues%5D%5B0%5D=Beschwerdekammer%3A%20Rechtshilfe&filters%5B0%5D%5Btype%5D=any#/"
   #... use developper tools, search for
   urlJSON <- "https://bstger.weblaw.ch/api/.netlify/functions/searchQueryService"
@@ -18,6 +19,7 @@ test_read_json_part <- function(dest = NA){
   # ... manually store json
   fi <- "./data/20220602_bstger_parts.json"
   fi <- "./data/20220711_bstger.json"
+
 
   txt <- readLines(fi)
 

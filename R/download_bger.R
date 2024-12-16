@@ -8,9 +8,9 @@
 #' @export
 #'
 #' @examples
-#' download_bger(2022,"I")
-#' download_bger(2022,"II")
-#' download_bger(2022,"IV")
+#' download_bger(2024,"I")
+#' download_bger(2024,"II")
+#' download_bger(2024,"IV")
 #' # Download whole history
 #' yrs <- 1954:2023
 #' for(year in yrs) download_bger(year,"I")

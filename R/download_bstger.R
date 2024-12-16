@@ -1,86 +1,160 @@
-download_bstger <- function(){
-  # https://bstger.weblaw.ch/?size=n_60_n#/
-  # https://bstger.weblaw.ch/?size=n_100_n#/
-  # https://links.weblaw.ch/
+#' Download BStGer Weekly
+#'
+#' @param startDate
+#' @param endDate
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' archive <- download_bstger()
+#' write_xl(archive)
+download_bstger <- function(startDate = as.Date("2024-01-01"),
+                            endDate = Sys.Date(),
+                            host = "https://bstger.weblaw.ch"){
 
-  url <- "https://bstger.weblaw.ch/?size=n_100_n&filters%5B0%5D%5Bfield%5D=court&filters%5B0%5D%5Bvalues%5D%5B0%5D=Beschwerdekammer%3A%20Rechtshilfe&filters%5B0%5D%5Btype%5D=any"
-  url <- "https://bstger.weblaw.ch/?size=n_500_n&filters%5B0%5D%5Bfield%5D=court&filters%5B0%5D%5Bvalues%5D%5B0%5D=Beschwerdekammer%3A%20Rechtshilfe&filters%5B0%5D%5Btype%5D=any"
-  page <- read_link(url)
+    # Find Destination
+    set_user()
 
+    # Check Dates
+    dts <- seq(startDate, endDate, "weeks")
 
-
-  JS1 <- read_link("https://bstger.weblaw.ch/static/js/2.c3095fe7.chunk.js")
-  JS2 <- read_link("https://bstger.weblaw.ch/static/js/main.30237468.chunk.js")
-
-
-
-  # Check Proxy
-  if(!exists("proxy_user")) proxy_user <<- get_proxy_user()
-  if(is.na(proxy_user[1])) stop("Proxy user for authentication missing!")
-
-  # Proxy-Server
-  proxy <- get_proxy()
-
-  httr::set_config(
-    use_proxy(url = proxy, username=proxy_user[1],password = proxy_user[2] , auth="any"),
-    override = TRUE
-  )
-
-  response <- httr::GET(url)
+    # Referer-Url Pattern
+    # "https://bstger.weblaw.ch/dashboard?guiLanguage=de&filters=[[\"publicationDate\",[{\"from\":\"2024-11-01T00:00:00.000Z\",\"to\":\"2024-11-08T22:59:59.999Z\"}]],[\"court\",[\"Beschwerdekammer: Rechtshilfe;;Cour des plaintes: entraide pénale;;Corte dei reclami penali: assistenza giudiziaria;;Board of Appeal: Legal Assistance\"]]]"
+    #  https://bstger.weblaw.ch/dashboard?guiLanguage=de&filters=[[%22publicationDate%22,[%7B%22from%22:%222024-11-01T00:00:00.000Z%22,%22to%22:%22toDateT22:59:59.999Z%22%7D]],[%22court%22,[%22Beschwerdekammer:%20Rechtshilfe;;Cour%20des%20plaintes:%20entraide%20p%C3%A9nale;;Corte%20dei%20reclami%20penali:%20assistenza%20giudiziaria;;Board%20of%20Appeal:%20Legal%20Assistance%22]]]
+    tmp <- "https://bstger.weblaw.ch/dashboard?guiLanguage=de&filters=[[\"publicationDate\",[{\"from\":\"%fromDate%T00:00:00.000Z\",\"to\":\"%toDate%T22:59:59.999Z\"}]],[\"court\",[\"Beschwerdekammer: Rechtshilfe;;Cour des plaintes: entraide pénale;;Corte dei reclami penali: assistenza giudiziaria;;Board of Appeal: Legal Assistance\"]]]&sort-field=relevance&sort-direction=relevance"
 
 
+    # Storage for document info
+    json_archive <- list()
 
-  if(response$status_code == 200){
-    # As Usual
-    httr::content(response, as="text")
-
-  } else if(response$status_code >= 400){
-    # Error
-  }
-
-
-  url <- "https://bstger.weblaw.ch/?size=n_50_n&filters%5B0%5D%5Bfield%5D=court&filters%5B0%5D%5Bvalues%5D%5B0%5D=Beschwerdekammer%3A%20Rechtshilfe&filters%5B0%5D%5Btype%5D=any"
-  urlJSON <- "https://bstger.weblaw.ch/api/.netlify/functions/searchQueryService"
-  urlJSON <- "https://bstger.weblaw.ch/api/.netlify/functions/searchQueryService"
-
-  postData <- r"({"sortOrder":"desc","sortField":"publicationDate","size":500,"guiLanguage":"de","metadataKeywordsMap":{"court":"Beschwerdekammer: Rechtshilfe"},"userID":"_r5jhzy7m6","sessionDuration":1657534832,"origin":"Dashboard","aggs":{"fields":["rulingType","tipoSentenza","year","court","language","lex-ch-bund-srList","ch-jurivocList","jud-ch-bund-bgeList","jud-ch-bund-bguList","jud-ch-bund-bvgeList","jud-ch-bund-bvgerList","jud-ch-bund-tpfList","jud-ch-bund-bstgerList","lex-ch-bund-asList","lex-ch-bund-bblList","lex-ch-bund-abList","jud-ch-ag-agveList"],"size":10}})"
-
-  # GET Json Response
-  h <- httr::add_headers(
-    `Accept` = "*/*",
-    `Accept-Encoding` = "gzip, deflate, br",
-    `Accept-Language` = "de,de-DE;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
-    # `Cache-Control` = "max-age=0",
-    `Connection` = "keep-alive",
-    `Content-Length` = "561",
-    `Content-Type` = "text/plain;charset=UTF-8",
-    #`Cookie` = "FTNT-EP-FG3K6ETB20900010=p6Wlpc6zBbakpaWluKWlpfCdlZ2Wk5CSlOXg7_Xhi-zr8ffki-Th6Ozri-btpaWl",
-    #`Cookie` = "FTNT-EP-FG3K6ETB20900010=p6WlpchZ7O2kpaWluKWlpfCdlZ2Wk5CSlOXg7_Xhi-zr8ffki-Th6Ozri-btpaWl",
-    `Cookie` = "FTNT-EP-FG3K6ETB20900010=p6WlpdhtIOykpaWluKWlpfCdlZ2Wk5CSlOXg7_Xhi-zr8ffki-Th6Ozri-btpaWl",
-    `Host` = "bstger.weblaw.ch",
-    `Origin` = "https://bstger.weblaw.ch",
-    `Referer` =  url, #
-    # `sec-ch-ua` =  "\" Not;A Brand\";v=\"99\", \"Microsoft Edge\";v=\"96\", \"Chromium\";v=\"96\"",
-    `sec-ch-ua` = "\" Not A;Brand\";v=\"99\", \"Chromium\";v=\"101\", \"Microsoft Edge\";v=\"101\"",
-    `sec-ch-ua-mobile` = "?1",
-    `sec-ch-ua-platform` = "Android",
-    `Sec-Fetch-Dest` = "empty",
-    `Sec-Fetch-Mode` = "no-cors",
-    `Sec-Fetch-Site` = "same-origin",
-    #`Sec-Fetch-User` = "?1",
-    #`Upgrade-Insecure-Requests` = "1",
-    `User-Agent` = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Mobile Safari/537.36 Edg/101.0.1210.39"
-  )
+    # Iteration
+    for(i in 1:length(dts)){
+      #dt <- as.Date("2024-01-01")
+      dt <- dts[i]
+      fromDate <- dt
+      toDate <- dt + 7
+      u <- tmp
+      u <- gsub("%fromDate%", fromDate, u)
+      u <- gsub("%toDate%", toDate, u)
+      # Url Encode
+      u <- URLencode(u)
+      u <- gsub("\\[", "%5B", u)
+      u <- gsub("\\]", "%5D", u)
+      u <- gsub(",", "%2C", u)
+      u <- gsub(";", "%3B", u)
+      u <- gsub(":", "%3A", u)
+      u <- gsub("https%3A", "https:", u)
+      message("Week from ", dt);cat(u, "\n")
 
 
-  responseJSON <- httr::POST(urlJSON, h)
-  responseJSON <- httr::POST(urlJSON, h, accept_json())
+      # Check Proxy
+      if(!exists("proxy_user")) proxy_user <<- get_proxy_user()
+      if(is.na(proxy_user[1])) stop("Proxy user for authentication missing!")
 
-  object.size(responseJSON)
+      # Proxy-Server
+      httr::set_config(
+        httr::use_proxy(url = get_proxy(), username=proxy_user[1],password = proxy_user[2] , auth="any"),
+        override = TRUE
+      )
 
-  if(responseJSON$status_code == 200){
-    httr::content(responseJSON, as="text")
-  }
+     # Header w/o cookie is working fine on 2024-12-12 (MES)
+      h <-    add_headers(
+        `Accept` = "*/*",
+        `Accept-Encoding` = "gzip, deflate, br",
+        `Accept-Language` = "de,de-DE;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+        `Connection` = "keep-alive",
+        `Content-Type` = "text/plain;charset=UTF-8",
+        #`Cookie` = cookie,
+        `Host` = "bstger.weblaw.ch",
+        `Origin` = "https://bstger.weblaw.ch",
+        `Referer` = "https://bstger.weblaw.ch/dashboard?guiLanguage=de&filters=%5B%5B%22publicationDate%22%2C%5B%7B%22from%22%3A%222024-11-04T00%3A00%3A00.000Z%22%2C%22to%22%3A%222024-11-11T22%3A59%3A59.999Z%22%7D%5D%5D%2C%5B%22court%22%2C%5B%22Beschwerdekammer%3A%20Rechtshilfe%3B%3BCour%20des%20plaintes%3A%20entraide%20p%C3%A9nale%3B%3BCorte%20dei%20reclami%20penali%3A%20assistenza%20giudiziaria%3B%3BBoard%20of%20Appeal%3A%20Legal%20Assistance%22%5D%5D%5D&sort-field=relevance&sort-direction=relevance",
+        `sec-ch-ua` = '"Microsoft Edge";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+        `sec-ch-ua-mobile` = "?0",
+        `sec-ch-ua-platform` = "Windows",
+        `sec-fetch-dest` = "empty",
+        `sec-fetch-mode` = "cors",
+        `sec-fetch-site` = "same-origin",
+        `user-agent` = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0"
+      )
+
+      # # Working Examples
+      # body <- r"({"guiLanguage":"de","metadataDateMap":{"publicationDate":{"from":"2024-11-01T00:00:00.000Z","to":"2024-11-08T22:59:59.999Z"}},"metadataKeywordsMap":{"court":"Beschwerdekammer: Rechtshilfe;;Cour des plaintes: entraide pénale;;Corte dei reclami penali: assistenza giudiziaria;;Board of Appeal: Legal Assistance"},"userID":"_zza6bz6","sessionDuration":5977,"aggs":{"fields":["rulingType","tipoSentenza","bgeStatus","year","court","language","lex-ch-bund-srList","ch-jurivocList","jud-ch-bund-bgeList","jud-ch-bund-bguList","jud-ch-bund-bvgeList","jud-ch-bund-bvgerList","jud-ch-bund-tpfList","jud-ch-bund-bstgerList","lex-ch-bund-asList","lex-ch-bund-bblList","lex-ch-bund-abList","jud-ch-ag-agveList"],"size":"10"}})"
+      # body <- r"({"guiLanguage":"de","metadataDateMap":{"publicationDate":{"from":"2024-11-04T00:00:00.000Z","to":"2024-11-11T22:59:59.999Z"}},"metadataKeywordsMap":{"court":"Beschwerdekammer: Rechtshilfe;;Cour des plaintes: entraide pénale;;Corte dei reclami penali: assistenza giudiziaria;;Board of Appeal: Legal Assistance"},"userID":"_209m6m7","sessionDuration":19,"aggs":{"fields":["rulingType","tipoSentenza","bgeStatus","year","court","language","lex-ch-bund-srList","ch-jurivocList","jud-ch-bund-bgeList","jud-ch-bund-bguList","jud-ch-bund-bvgeList","jud-ch-bund-bvgerList","jud-ch-bund-tpfList","jud-ch-bund-bstgerList","lex-ch-bund-asList","lex-ch-bund-bblList","lex-ch-bund-abList","jud-ch-ag-agveList"],"size":"10"}})"
+      # body <- r"({"guiLanguage":"de","metadataDateMap":{"publicationDate":{"from":"2024-11-04T00:00:00.000Z","to":"2024-11-11T22:59:59.999Z"}},"metadataKeywordsMap":{"court":"Beschwerdekammer: Rechtshilfe;;Cour des plaintes: entraide pénale;;Corte dei reclami penali: assistenza giudiziaria;;Board of Appeal: Legal Assistance"},"userID":"_yr87sw5","sessionDuration":717,"aggs":{"fields":["rulingType","tipoSentenza","bgeStatus","year","court","language","lex-ch-bund-srList","ch-jurivocList","jud-ch-bund-bgeList","jud-ch-bund-bguList","jud-ch-bund-bvgeList","jud-ch-bund-bvgerList","jud-ch-bund-tpfList","jud-ch-bund-bstgerList","lex-ch-bund-asList","lex-ch-bund-bblList","lex-ch-bund-abList","jud-ch-ag-agveList"],"size":"10"}})"
+      # body <- r"({"guiLanguage":"de","metadataDateMap":{"publicationDate":{"from":"2024-11-04T00:00:00.000Z","to":"2024-11-11T22:59:59.999Z"}},"metadataKeywordsMap":{"court":"Beschwerdekammer: Rechtshilfe;;Cour des plaintes: entraide pénale;;Corte dei reclami penali: assistenza giudiziaria;;Board of Appeal: Legal Assistance"},"aggs":{"fields":["rulingType","tipoSentenza","bgeStatus","year","court","language","lex-ch-bund-srList","ch-jurivocList","jud-ch-bund-bgeList","jud-ch-bund-bguList","jud-ch-bund-bvgeList","jud-ch-bund-bvgerList","jud-ch-bund-tpfList","jud-ch-bund-bstgerList","lex-ch-bund-asList","lex-ch-bund-bblList","lex-ch-bund-abList","jud-ch-ag-agveList"],"size":"100"}})"
+      #
+
+      body <- r"({"guiLanguage":"de","metadataDateMap":{"publicationDate":{"from":"%fromDate%T00:00:00.000Z","to":"%toDate%T22:59:59.999Z"}},"metadataKeywordsMap":{"court":"Beschwerdekammer: Rechtshilfe;;Cour des plaintes: entraide pénale;;Corte dei reclami penali: assistenza giudiziaria;;Board of Appeal: Legal Assistance"},"aggs":{"fields":["rulingType","tipoSentenza","bgeStatus","year","court","language","lex-ch-bund-srList","ch-jurivocList","jud-ch-bund-bgeList","jud-ch-bund-bguList","jud-ch-bund-bvgeList","jud-ch-bund-bvgerList","jud-ch-bund-tpfList","jud-ch-bund-bstgerList","lex-ch-bund-asList","lex-ch-bund-bblList","lex-ch-bund-abList","jud-ch-ag-agveList"],"size":"100"}})"
+      body <- gsub("%fromDate%", fromDate, body)
+      body <- gsub("%toDate%", toDate, body)
+
+      json_data <- jsonlite::parse_json(body)
 
 
+      url <- "https://bstger.weblaw.ch/api/.netlify/functions/searchQueryService"
+      # response <- httr::GET(u)
+      # You need to enable JavaScript to run this app.
+
+      responseJSON <- httr::POST(url, h, body = json_data, encode = "json")
+
+
+
+      if(httr::status_code(responseJSON) == "200"){
+        json <- httr::content(responseJSON, as="text", encoding = "UTF8")
+        df <- jsonlite::parse_json(json)
+        N <- df$totalNumberOfDocuments
+
+        for (d in df$documents){
+
+          # Add to Archive
+          decision <- tibble_row(
+                          LEID = unlist(d$metadataKeywordTextMap$leid),
+                          LANGUAGE = unlist(d$metadataKeywordTextMap$language),
+                          REFERENZ = unlist(d$metadataKeywordTextMap$title),  # d$metadataKeywordTextMap$sortTitle[[1]]
+                          CONTENT = d$content,
+                          URL =  unlist(d$metadataKeywordTextMap$originalUrl),
+                          KAMMER = unlist(d$metadataKeywordTextMap$court),
+                          ENTSCHEIDDATUM = unlist(d$metadataDateMap$rulingDate),  # d$metadataKeywordTextMap$sortRulingDate[[1]]
+                          PUBLUKATIONSDATUM = unlist(d$metadataDateMap$publicationDate),    #  d$metadataKeywordTextMap$sortPublicationDate[[1]]
+                          ENTSCHEIDTYP = unlist(d$metadataKeywordTextMap$rulingType),   # BStGer
+                          ENTSCHEIDSTATUS = unlist(d$metadataKeywordTextMap$tipoSentenza) # Kein Weiterzug
+                        )
+
+          json_archive[[d$leid]] <- decision
+
+          # Download-Link
+          pdf_link <- paste0(host, decision$URL)
+          message(pdf_link)
+
+          # Download to Destination
+          fi <- basename(pdf_link)
+          yr <- substr(fi, 1,4)
+          dest <- gsub("DEST=", "", user$DEST)
+          fullname <- file.path(dest, "BStGer/Beschwerdekammer_RH", yr, fi)
+          if(!file.exists(fullname))
+            download.file(pdf_link, fullname, mode="wb")
+        }
+
+      }
+
+    }
+
+    # Data Collection
+    result <- json_archive %>%
+              do.call(dplyr::bind_rows, .) %>%
+              mutate(
+                URL = paste0(host, URL),
+                ENTSCHEIDTYP = gsub("^(.*?);;.*", "\\1", ENTSCHEIDTYP),
+                CONTENT = gsub("^(.*?);;.*", "\\1", CONTENT),
+                KAMMER = gsub("^(.*?);;.*", "\\1", KAMMER),
+                ENTSCHEIDSTATUS = gsub("^(.*?);;.*", "\\1", ENTSCHEIDSTATUS),
+                ENTSCHEIDDATUM = as.POSIXct(ENTSCHEIDDATUM),
+                PUBLUKATIONSDATUM = as.POSIXct(PUBLUKATIONSDATUM)
+              )
+
+    attr(result, "Name") <- "Gerichtsentscheide BStGer"
+
+    # Return
+    return(result)
 }

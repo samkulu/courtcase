@@ -9,6 +9,7 @@
 #' @examples
 #' download_bger_docid("144-I-1","test.html")
 #' download_bger_docid("144-I-20","test.html") # Provoke a warning!
+#' download_bger_docid("149-I-329","test.html")
 download_bger_docid <- function(docID, dest, tryN = 5, isPublic = TRUE){
   cat("Download ", docID)
   if (file.exists(dest)) {
@@ -34,7 +35,14 @@ download_bger_docid <- function(docID, dest, tryN = 5, isPublic = TRUE){
     page <- read_link(url)
     # Prevent print menue onLoad
     txt <- "window.print()"
-    page2 <- gsub(txt,"",page)
+    #browser()
+    txt <- utf8::utf8_encode(txt)
+    # page2 <- gsub(txt,"",page)
+    # Workaround since 2024-12-16
+    idx <- grep(txt, page)
+    page2 <- page
+    for(i in idx) page2[i] <- gsub(txt,"",page2[i])
+
     # Workaround for dest=NA
     if(is.na(dest)){
       # return txt

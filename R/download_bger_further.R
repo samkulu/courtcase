@@ -10,7 +10,7 @@
 #'
 #' @examples
 #' download_bger_further()
-#' download_bger_further(2022)
+#' download_bger_further(2024)
 download_bger_further <- function(year = get_year(),
                                   month=1:12, removeLastPageCache = TRUE,
                                   dest = NA){
@@ -23,7 +23,6 @@ download_bger_further <- function(year = get_year(),
     dest <- file.path(dest, "BGer_WeitereUrteile")
   }
   DEST <- dest
-browser()
 
   # Start Date
   sDate = as.Date(paste(year,1,1,sep = "-"))
@@ -261,7 +260,7 @@ browser()
     url <- "https://www.bger.ch/ext/eurospider/live/de/php/aza/http/index.php?lang=de&type=simple_query&page=%Page%&from_date=%dtFrom%&to_date=%dtTo%&sort=relevance&insertion_date=&top_subcollection_aza=all&query_words="
 
 
-    for (i in 5:length(sMonth)) {
+    for (i in 1:length(sMonth)) {
       dtFrom <- format(sMonth[i],"%d.%m.%Y")
       eDate <- seq(sMonth[i], by = "month", length = 2)[2]
       if (eDate > Sys.Date()) eDate <- Sys.Date()-1
