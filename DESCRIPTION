@@ -1,0 +1,26 @@
+Package: courtcase
+Type: Package
+Title: Swiss Court Cases
+Version: 0.1.0
+Author: person(given = "Samuel",
+             family = "Meichtry",
+             role = c("auth","cre"),
+             email = "samuel.meichtry@swisslancer.com",
+             comment = c(ORCID = "0000-0003-2165-791X"))
+Maintainer: The package maintainer <samuel.meichtry@swisslancer.com>
+Description: Download and manage court decisions of
+    BStGer and BGer.
+License: Private
+Encoding: UTF-8
+LazyData: true
+Depends:
+    R (>= 4.00),
+    XML,
+    httr,
+    rvest,
+    tibble, 
+    tidyr,
+    dplyr, 
+    readr, 
+    writexl,
+    jsonlite,
