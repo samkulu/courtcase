@@ -1,7 +1,7 @@
 run_decisions <- function(){
 
   # Year
-  year <- get_year()
+  year <- get_year() - 1
 
   # BGer Leitentscheide
   download_bger(year,"I")

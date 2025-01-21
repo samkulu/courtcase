@@ -67,7 +67,7 @@ download_bstger <- function(startDate = as.Date("2024-01-01"),
       )
 
      # Header w/o cookie is working fine on 2024-12-12 (MES)
-      h <-    add_headers(
+      h <-    httr::add_headers(
         `Accept` = "*/*",
         `Accept-Encoding` = "gzip, deflate, br",
         `Accept-Language` = "de,de-DE;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
@@ -146,12 +146,25 @@ download_bstger <- function(startDate = as.Date("2024-01-01"),
           dest <- gsub("DEST=", "", user$DEST)
           fullname <- file.path(dest, "BStGer/Beschwerdekammer_RH", yr, fi)
           if(!file.exists(fullname))
-            download.file(pdf_link, fullname, mode="wb")
+            tryCatch(
+              {download.file(pdf_link, fullname, mode="wb")},
+              error = function(cond) {
+                message(paste("URL does not seem to exist:", url))
+                message("Here's the original error message:")
+                message(conditionMessage(cond))
+                # Choose a return value in case of error
+                # NA
+              }
+
+            )
+
         }
 
       }
 
     }
+
+    browser()
 
     # Data Collection
     result <- json_archive %>%
