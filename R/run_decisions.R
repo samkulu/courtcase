@@ -1,3 +1,10 @@
+#' Run Decisions
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' run_decisions()
 run_decisions <- function(){
 
   # Year

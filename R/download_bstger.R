@@ -17,7 +17,7 @@
 #' archive <- download_bstger()
 #'
 #' write_xl(archive)
-download_bstger <- function(startDate = as.Date("2024-01-01"),
+download_bstger <- function(startDate = as.Date("2025-01-01"),
                             endDate = Sys.Date(),
                             host = "https://bstger.weblaw.ch"){
 
@@ -42,6 +42,7 @@ download_bstger <- function(startDate = as.Date("2024-01-01"),
       dt <- dts[i]
       fromDate <- dt
       toDate <- dt + 7
+      #browser()
       u <- tmp
       u <- gsub("%fromDate%", fromDate, u)
       u <- gsub("%toDate%", toDate, u)
@@ -145,6 +146,10 @@ download_bstger <- function(startDate = as.Date("2024-01-01"),
           yr <- substr(fi, 1,4)
           dest <- gsub("DEST=", "", user$DEST)
           fullname <- file.path(dest, "BStGer/Beschwerdekammer_RH", yr, fi)
+
+          dirname <- dirname(fullname)
+          if(!dir.exists()) dir.create(dirname, recursive = TRUE)
+
           if(!file.exists(fullname))
             tryCatch(
               {download.file(pdf_link, fullname, mode="wb")},
@@ -163,8 +168,6 @@ download_bstger <- function(startDate = as.Date("2024-01-01"),
       }
 
     }
-
-    browser()
 
     # Data Collection
     result <- json_archive %>%
