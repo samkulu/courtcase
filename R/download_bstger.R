@@ -17,7 +17,7 @@
 #' archive <- download_bstger()
 #'
 #' write_xl(archive)
-download_bstger <- function(startDate = as.Date("2025-09-01"),
+download_bstger <- function(startDate = as.Date("2026-01-01"),
                             endDate = Sys.Date(),
                             host = "https://bstger.weblaw.ch"){
 
@@ -65,10 +65,11 @@ download_bstger <- function(startDate = as.Date("2025-09-01"),
       # Make a Session with pseudo authentication
       # Using Authentication without login
       make_session <- httr::GET(url = "https://bstger.weblaw.ch/api/getKeycloakConfigurations")
-      cookie <- cookies(make_session)$value[1]
+      cook <- cookies(make_session)
+      cookie <- cook$value[1]   # cook$name
 
 
-      # Header w/o cookie is working fine on 2024-12-12 (MES)
+      # Header w/o cookie is working fine on 2024-12-12, 2026-07-30
       h <-    httr::add_headers(
         `Accept` = "*/*",
         `Accept-Encoding` = "gzip, deflate, br",
@@ -87,19 +88,13 @@ download_bstger <- function(startDate = as.Date("2025-09-01"),
         `sec-fetch-dest` = "empty",
         `sec-fetch-mode` = "cors",
         `sec-fetch-site` = "same-origin",
+        `sec-fetch-user` = "?1",
         `user-agent` = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
       )
 
-      # Older Working Examples
-      # body <- r"({"guiLanguage":"de","metadataDateMap":{"publicationDate":{"from":"2024-11-01T00:00:00.000Z","to":"2024-11-08T22:59:59.999Z"}},"metadataKeywordsMap":{"court":"Beschwerdekammer: Rechtshilfe;;Cour des plaintes: entraide pénale;;Corte dei reclami penali: assistenza giudiziaria;;Board of Appeal: Legal Assistance"},"userID":"_zza6bz6","sessionDuration":5977,"aggs":{"fields":["rulingType","tipoSentenza","bgeStatus","year","court","language","lex-ch-bund-srList","ch-jurivocList","jud-ch-bund-bgeList","jud-ch-bund-bguList","jud-ch-bund-bvgeList","jud-ch-bund-bvgerList","jud-ch-bund-tpfList","jud-ch-bund-bstgerList","lex-ch-bund-asList","lex-ch-bund-bblList","lex-ch-bund-abList","jud-ch-ag-agveList"],"size":"10"}})"
-      # body <- r"({"guiLanguage":"de","metadataDateMap":{"publicationDate":{"from":"2024-11-04T00:00:00.000Z","to":"2024-11-11T22:59:59.999Z"}},"metadataKeywordsMap":{"court":"Beschwerdekammer: Rechtshilfe;;Cour des plaintes: entraide pénale;;Corte dei reclami penali: assistenza giudiziaria;;Board of Appeal: Legal Assistance"},"userID":"_209m6m7","sessionDuration":19,"aggs":{"fields":["rulingType","tipoSentenza","bgeStatus","year","court","language","lex-ch-bund-srList","ch-jurivocList","jud-ch-bund-bgeList","jud-ch-bund-bguList","jud-ch-bund-bvgeList","jud-ch-bund-bvgerList","jud-ch-bund-tpfList","jud-ch-bund-bstgerList","lex-ch-bund-asList","lex-ch-bund-bblList","lex-ch-bund-abList","jud-ch-ag-agveList"],"size":"10"}})"
-      # body <- r"({"guiLanguage":"de","metadataDateMap":{"publicationDate":{"from":"2024-11-04T00:00:00.000Z","to":"2024-11-11T22:59:59.999Z"}},"metadataKeywordsMap":{"court":"Beschwerdekammer: Rechtshilfe;;Cour des plaintes: entraide pénale;;Corte dei reclami penali: assistenza giudiziaria;;Board of Appeal: Legal Assistance"},"userID":"_yr87sw5","sessionDuration":717,"aggs":{"fields":["rulingType","tipoSentenza","bgeStatus","year","court","language","lex-ch-bund-srList","ch-jurivocList","jud-ch-bund-bgeList","jud-ch-bund-bguList","jud-ch-bund-bvgeList","jud-ch-bund-bvgerList","jud-ch-bund-tpfList","jud-ch-bund-bstgerList","lex-ch-bund-asList","lex-ch-bund-bblList","lex-ch-bund-abList","jud-ch-ag-agveList"],"size":"10"}})"
-      # body <- r"({"guiLanguage":"de","metadataDateMap":{"publicationDate":{"from":"2024-11-04T00:00:00.000Z","to":"2024-11-11T22:59:59.999Z"}},"metadataKeywordsMap":{"court":"Beschwerdekammer: Rechtshilfe;;Cour des plaintes: entraide pénale;;Corte dei reclami penali: assistenza giudiziaria;;Board of Appeal: Legal Assistance"},"aggs":{"fields":["rulingType","tipoSentenza","bgeStatus","year","court","language","lex-ch-bund-srList","ch-jurivocList","jud-ch-bund-bgeList","jud-ch-bund-bguList","jud-ch-bund-bvgeList","jud-ch-bund-bvgerList","jud-ch-bund-tpfList","jud-ch-bund-bstgerList","lex-ch-bund-asList","lex-ch-bund-bblList","lex-ch-bund-abList","jud-ch-ag-agveList"],"size":"100"}})"
-      #
-
       # Request with Data in Post
       # Size 100 hacked into, maybe not necessary
-      body <- r"({"guiLanguage":"de","metadataKeywordsMap":{"court":"Beschwerdekammer: Rechtshilfe;;Cour des plaintes: entraide pénale;;Corte dei reclami penali: assistenza giudiziaria;;Board of Appeal: Legal Assistance"},"metadataDateMap":{"publicationDate":{"from":"%fromDate%","to":"%toDate%"}},"userID":"_fltt5hx","from":0,"aggs":{"fields":["filterDate","sortPublicationDate","sortRulingDate","publicationDate","rulingDate","rulingType","tipoSentenza","bgeStatus","bgeDossierList","bstgerDossierList","year","court","tpfDossierList","author","language","lex-ch-bund-srList","ch-jurivocList","jud-ch-bund-bgeList","jud-ch-bund-bguList","jud-ch-bund-bvgeList","jud-ch-bund-bvgerList","jud-ch-bund-tpfList","jud-ch-bund-bstgerList","lex-ch-bund-asList","lex-ch-bund-bblList","lex-ch-bund-abList","jud-ch-ag-agveList"],"size":"100"}})"
+      body <- r"({"guiLanguage":"de","metadataKeywordsMap":{"court":"Beschwerdekammer: Rechtshilfe;;Cour des plaintes: entraide pénale;;Corte dei reclami penali: assistenza giudiziaria;;Board of Appeal: Legal Assistance"},"metadataDateMap":{"publicationDate":{"from":"%fromDate%","to":"%toDate%"}},"userID":"_zwf7ih0","from":0,"aggs":{"fields":["filterDate","sortPublicationDate","sortRulingDate","publicationDate","rulingDate","rulingType","tipoSentenza","bgeStatus","bgeDossierList","bstgerDossierList","year","court","tpfDossierList","author","language","lex-ch-bund-srList","ch-jurivocList","jud-ch-bund-bgeList","jud-ch-bund-bguList","jud-ch-bund-bvgeList","jud-ch-bund-bvgerList","jud-ch-bund-tpfList","jud-ch-bund-bstgerList","lex-ch-bund-asList","lex-ch-bund-bblList","lex-ch-bund-abList"],"size":"100"}})"
       body <- gsub("%fromDate%", fromDate, body)
       body <- gsub("%toDate%", toDate, body)
       json_data <- jsonlite::parse_json(body)
@@ -116,8 +111,9 @@ download_bstger <- function(startDate = as.Date("2025-09-01"),
       # Check Response
       if(httr::status_code(responseJSON) == "200"){
         json <- httr::content(responseJSON, as="text", encoding = "UTF8")
-        df <- jsonlite::parse_json(json)$data
+        df <- jsonlite::parse_json(json) # 2026-07-30 changed status is now outside data
         stopifnot(df$status == "success")
+        df <- df$data
 
         N <- df$totalNumberOfDocuments %>% as.integer()
 
